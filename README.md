@@ -64,7 +64,7 @@
 
 ## 📱 Giao diện ứng dụng (Screenshots)
 
-> *Mẹo: Bạn hãy chụp màn hình ứng dụng, tải lên thư mục `assets/screenshots/` trong project và thay đường dẫn vào bảng dưới đây.*
+>
 
 <div align="center">
   <table>
