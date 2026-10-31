@@ -75,7 +75,7 @@
       <td align="center"><b>Đặt lịch hẹn</b></td>
     </tr>
     <tr>
-      <td><img src="<img width="366" height="802" alt="image" src="https://github.com/user-attachments/assets/41f63e75-f05a-429f-b415-3864d239735a" />
+      <td><img src="https://github.com/user-attachments/assets/41f63e75-f05a-429f-b415-3864d239735a" />
 " width="200"/></td>
       <td><img src="https://via.placeholder.com/200x400.png?text=Home+Screen" width="200"/></td>
       <td><img src="https://via.placeholder.com/200x400.png?text=Doctor+Detail" width="200"/></td>
@@ -110,3 +110,4 @@ medbook/
 │   └── main.dart            # Điểm khởi chạy ứng dụng
 ├── pubspec.yaml             # Khai báo các thư viện (dependencies) và tài nguyên
 └── README.md                # Tài liệu hướng dẫn dự án
+
