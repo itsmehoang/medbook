@@ -76,8 +76,8 @@
     </tr>
     <tr>
       <td><img src="https://github.com/user-attachments/assets/41f63e75-f05a-429f-b415-3864d239735a"" width="200"/></td>
-      <td><img src="https://via.placeholder.com/200x400.png?text=Home+Screen" width="200"/></td>
-      <td><img src="https://via.placeholder.com/200x400.png?text=Doctor+Detail" width="200"/></td>
+      <td><img src="https://github.com/user-attachments/assets/f46135d4-5bd5-4f89-9c08-6e04239eed95" width="200"/></td>
+      <td><img src="https://github.com/user-attachments/assets/6e9878a1-f6d6-411b-b277-ea376db71d1b" width="200"/></td>
       <td><img src="https://via.placeholder.com/200x400.png?text=Booking+Screen" width="200"/></td>
     </tr>
   </table>
@@ -109,4 +109,5 @@ medbook/
 │   └── main.dart            # Điểm khởi chạy ứng dụng
 ├── pubspec.yaml             # Khai báo các thư viện (dependencies) và tài nguyên
 └── README.md                # Tài liệu hướng dẫn dự án
+
 
