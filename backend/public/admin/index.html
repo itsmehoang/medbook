@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDBOOK Admin Portal - Cổng Quản Trị Bệnh Viện</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0284C7',
+            primaryDark: '#0369A1',
+            primaryLight: '#E0F2FE',
+            accent: '#0D9488',
+            accentLight: '#CCFBF1',
+            sidebar: '#0F172A',
+            sidebarHover: '#1E293B',
+            bgLight: '#F4F7FA'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-bgLight text-slate-800 h-screen flex overflow-hidden">
+
+  <!-- ============================================================== -->
+  <!-- 1. MÀN HÌNH ĐĂNG NHẬP (HIỂN THỊ NẾU CHƯA CÓ TOKEN ADMIN) -->
+  <!-- ============================================================== -->
+  <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 border border-slate-100">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-tr from-primary to-primaryDark rounded-2xl flex items-center justify-center text-white mx-auto shadow-lg shadow-sky-500/30 mb-3 text-2xl font-bold">
+          <i class="fa-solid fa-hospital-user"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">MEDBOOK ADMIN</h2>
+        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Cổng Điều Phối Bệnh Viện & Bác Sĩ</p>
+      </div>
+
+      <div id="loginAlert" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs flex items-center gap-2">
+        <i class="fa-solid fa-circle-exclamation text-base"></i>
+        <span id="loginAlertText">Đăng nhập thất bại.</span>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Số điện thoại hoặc Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-user-shield text-sm"></i>
+            </span>
+            <input type="text" id="loginUsername" required value="0900000000"
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition"
+              placeholder="0900000000 hoặc admin@medbook.vn">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Mật khẩu</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-lock text-sm"></i>
+            </span>
+            <input type="password" id="loginPassword" required value="123456"
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition"
+              placeholder="••••••••">
+          </div>
+        </div>
+
+        <div class="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-center justify-between text-xs">
+          <span class="text-slate-600">Demo Admin: <strong>0900000000 / 123456</strong></span>
+          <button type="button" onclick="fillDemoAdmin()" class="text-primary font-bold hover:underline">Điền nhanh</button>
+        </div>
+
+        <button type="submit" id="loginBtn"
+          class="w-full py-2.5 bg-gradient-to-r from-primary to-primaryDark text-white font-semibold rounded-xl text-sm shadow-md shadow-sky-500/20 hover:opacity-95 transition flex items-center justify-center gap-2">
+          <span>Đăng nhập Quản Trị</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 2. SIDEBAR QUẢN TRỊ BÊN TRÁI -->
+  <!-- ============================================================== -->
+  <aside class="w-64 bg-sidebar text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800 select-none">
+    <!-- Brand -->
+    <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-800 bg-slate-950/40">
+      <div class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white shadow-md shadow-sky-500/20 font-bold text-lg">
+        <i class="fa-solid fa-square-plus"></i>
+      </div>
+      <div>
+        <div class="text-base font-bold text-white tracking-wide">MEDBOOK</div>
+        <div class="text-[10px] text-sky-400 font-medium">HOSPITAL PORTAL</div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+      <div class="px-3 pb-1.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Phân hệ quản trị</div>
+      
+      <button onclick="switchTab('dashboard')" id="nav-dashboard"
+        class="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-white bg-primary shadow-sm shadow-sky-500/20">
+        <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+        <span>Bảng điều khiển</span>
+      </button>
+
+      <button onclick="switchTab('appointments')" id="nav-appointments"
+        class="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:text-white hover:bg-sidebarHover">
+        <i class="fa-solid fa-calendar-check w-5 text-center text-sky-400"></i>
+        <span>Điều phối Phiếu khám</span>
+        <span id="badgePendingCount" class="ml-auto bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold px-2 py-0.5 rounded-full">0</span>
+      </button>
+
+      <button onclick="switchTab('doctors')" id="nav-doctors"
+        class="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:text-white hover:bg-sidebarHover">
+        <i class="fa-solid fa-user-doctor w-5 text-center text-teal-400"></i>
+        <span>Bác sĩ & Chuyên khoa</span>
+      </button>
+
+      <div class="pt-4 px-3 pb-1.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Liên kết nhanh</div>
+      <a href="/api-docs" target="_blank"
+        class="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:text-white hover:bg-sidebarHover">
+        <i class="fa-solid fa-book-medical w-5 text-center text-indigo-400"></i>
+        <span>Swagger API Docs</span>
+        <i class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs text-slate-400"></i>
+      </a>
+      <a href="/health" target="_blank"
+        class="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:text-white hover:bg-sidebarHover">
+        <i class="fa-solid fa-heart-pulse w-5 text-center text-emerald-400"></i>
+        <span>Hệ thống Health Check</span>
+      </a>
+    </nav>
+
+    <!-- User Profile & Logout -->
+    <div class="p-3 border-t border-slate-800 bg-slate-950/30">
+      <div class="flex items-center gap-3 px-2 py-2">
+        <img id="adminAvatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e" alt="Admin" class="w-9 h-9 rounded-full object-cover border border-slate-700">
+        <div class="flex-1 min-w-0">
+          <div id="adminName" class="text-xs font-semibold text-white truncate">Quản Trị Viên</div>
+          <div id="adminRole" class="text-[10px] text-sky-400 font-bold uppercase">BỆNH VIỆN MEDBOOK</div>
+        </div>
+        <button onclick="handleLogout()" title="Đăng xuất" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-right-from-bracket text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================== -->
+  <!-- 3. KHU VỰC NỘI DUNG CHÍNH (MAIN CONTENT) -->
+  <!-- ============================================================== -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- Topbar -->
+    <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between flex-shrink-0 shadow-sm">
+      <div class="flex items-center gap-3">
+        <h1 id="topbarTitle" class="text-lg font-bold text-slate-800">Bảng Điều Khiển Tổng Quan</h1>
+        <span class="text-xs px-2.5 py-1 bg-sky-50 text-primary border border-sky-200 rounded-full font-semibold">
+          <i class="fa-solid fa-hospital mr-1"></i> Bệnh viện Đa khoa Quốc tế MEDBOOK
+        </span>
+      </div>
+      <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
+        <span id="liveClock" class="font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+          <i class="fa-regular fa-clock mr-1 text-primary"></i> Đang tải giờ...
+        </span>
+        <button onclick="refreshCurrentTab()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200 transition font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+          <span>Làm mới</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Body Scrollable -->
+    <main class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+
+      <!-- ========================================================== -->
+      <!-- TAB 1: BẢNG ĐIỀU KHIỂN (DASHBOARD) -->
+      <!-- ========================================================== -->
+      <section id="tab-dashboard" class="space-y-6">
+        <!-- 4 Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Card 1: Ca khám hôm nay -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ca khám hôm nay</p>
+              <h3 id="statTodayAppts" class="text-28 font-bold text-slate-900 mt-1 text-2xl font-extrabold text-primary">0</h3>
+              <p class="text-[11px] text-slate-500 mt-1 font-medium"><i class="fa-solid fa-calendar-day text-primary mr-1"></i>Ngày hiện tại</p>
+            </div>
+            <div class="w-13 h-13 w-12 h-12 bg-sky-50 text-primary rounded-2xl flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Chờ xác nhận -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chờ xác nhận</p>
+              <h3 id="statPendingAppts" class="text-28 font-bold text-slate-900 mt-1 text-2xl font-extrabold text-amber-500">0</h3>
+              <p class="text-[11px] text-amber-600 mt-1 font-medium"><i class="fa-solid fa-clock mr-1"></i>Cần duyệt tiếp nhận</p>
+            </div>
+            <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Đã hoàn thành -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đã khám xong</p>
+              <h3 id="statCompletedAppts" class="text-28 font-bold text-slate-900 mt-1 text-2xl font-extrabold text-emerald-500">0</h3>
+              <p class="text-[11px] text-emerald-600 mt-1 font-medium"><i class="fa-solid fa-circle-check mr-1"></i>Đã có kết quả & toa</p>
+            </div>
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-stethoscope"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Tổng bác sĩ -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng số Bác sĩ</p>
+              <h3 id="statTotalDoctors" class="text-28 font-bold text-slate-900 mt-1 text-2xl font-extrabold text-teal-600">0</h3>
+              <p class="text-[11px] text-slate-500 mt-1 font-medium"><i class="fa-solid fa-user-doctor mr-1 text-teal-500"></i>6 Chuyên khoa chính</p>
+            </div>
+            <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts & Specialty Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Chart Cột: Lưu lượng theo khoa -->
+          <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-base font-bold text-slate-800">Lưu lượng đặt khám theo Chuyên khoa</h4>
+                <p class="text-xs text-slate-500 mt-0.5">Số lượt bệnh nhân đăng ký khám tại các khoa trong bệnh viện</p>
+              </div>
+              <span class="text-xs text-primary font-semibold bg-sky-50 px-2.5 py-1 rounded-lg">Thời gian thực</span>
+            </div>
+            <div class="h-64">
+              <canvas id="specialtyChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Tình trạng xử lý phiếu khám -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 class="text-base font-bold text-slate-800 mb-1">Cơ cấu Trạng thái Phiếu khám</h4>
+              <p class="text-xs text-slate-500 mb-4">Phân bố tỷ lệ phiếu khám bệnh viện</p>
+              <div class="h-44 flex items-center justify-center">
+                <canvas id="statusDoughnutChart"></canvas>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-100 text-xs">
+              <div class="p-2 bg-sky-50 rounded-lg text-slate-700">
+                <span class="text-slate-500 block text-[10px]">ĐÃ XÁC NHẬN</span>
+                <strong id="labelConfirmed" class="text-primary text-sm font-bold">0</strong>
+              </div>
+              <div class="p-2 bg-emerald-50 rounded-lg text-slate-700">
+                <span class="text-slate-500 block text-[10px]">ĐÃ HOÀN THÀNH</span>
+                <strong id="labelCompleted" class="text-emerald-600 text-sm font-bold">0</strong>
+              </div>
+              <div class="p-2 bg-amber-50 rounded-lg text-slate-700">
+                <span class="text-slate-500 block text-[10px]">CHỜ DUYỆT</span>
+                <strong id="labelPending" class="text-amber-600 text-sm font-bold">0</strong>
+              </div>
+              <div class="p-2 bg-red-50 rounded-lg text-slate-700">
+                <span class="text-slate-500 block text-[10px]">ĐÃ HỦY</span>
+                <strong id="labelCancelled" class="text-red-600 text-sm font-bold">0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng 6 ca đặt khám gần nhất -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h4 class="text-base font-bold text-slate-800">Phiếu đặt khám vừa tạo gần đây</h4>
+              <p class="text-xs text-slate-500">Danh sách các bệnh nhân vừa đăng ký khám trực tuyến qua ứng dụng MEDBOOK</p>
+            </div>
+            <button onclick="switchTab('appointments')" class="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+              <span>Xem toàn bộ phiếu khám</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-semibold border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-4">STT Khám</th>
+                  <th class="py-3 px-4">Mã Phiếu</th>
+                  <th class="py-3 px-4">Người Khám</th>
+                  <th class="py-3 px-4">Bác Sĩ Phụ Trách</th>
+                  <th class="py-3 px-4">Khung Giờ Hẹn</th>
+                  <th class="py-3 px-4">Hình Thức</th>
+                  <th class="py-3 px-4">Trạng Thái</th>
+                  <th class="py-3 px-4 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="recentAppointmentsBody" class="divide-y divide-slate-100 font-medium">
+                <tr><td colspan="8" class="text-center py-6 text-slate-400">Đang tải dữ liệu...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== -->
+      <!-- TAB 2: ĐIỀU PHỐI PHIẾU KHÁM (QUẢN LÝ LỊCH HẸN) -->
+      <!-- ========================================================== -->
+      <section id="tab-appointments" class="hidden space-y-6">
+        <!-- Bộ lọc (Filters) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Filter Ngày -->
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Ngày khám:</label>
+                <input type="date" id="filterDate" onchange="loadAppointmentsTable()"
+                  class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-primary">
+              </div>
+
+              <!-- Filter Trạng thái -->
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Trạng thái phiếu:</label>
+                <select id="filterStatus" onchange="loadAppointmentsTable()"
+                  class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-primary font-medium">
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="pending">Chờ xác nhận (pending)</option>
+                  <option value="confirmed">Đã xác nhận (confirmed)</option>
+                  <option value="completed">Đã khám xong (completed)</option>
+                  <option value="cancelled">Đã hủy (cancelled)</option>
+                </select>
+              </div>
+
+              <!-- Nút reset filter -->
+              <div class="pt-5">
+                <button onclick="resetAppointmentFilters()" class="text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+                  <i class="fa-solid fa-filter-circle-xmark mr-1"></i> Xóa lọc
+                </button>
+              </div>
+            </div>
+
+            <!-- Ô tìm kiếm -->
+            <div class="pt-5 w-full md:w-80">
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </span>
+                <input type="text" id="filterSearch" oninput="debounceAppointmentSearch()"
+                  placeholder="Tìm mã phiếu, tên bệnh nhân, SĐT, BHYT..."
+                  class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-primary">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng danh sách phiếu khám toàn diện -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700">DANH SÁCH PHIẾU ĐẶT KHÁM (<span id="totalAppointmentsCount" class="text-primary">0</span>)</span>
+            <span class="text-[11px] text-slate-400">Bác sĩ có thể bấm "Trả kết quả & Kê đơn" để đồng bộ kết quả trực tiếp về điện thoại người bệnh</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-3 text-center">STT</th>
+                  <th class="py-3 px-4">Mã Phiếu</th>
+                  <th class="py-3 px-4">Người Khám & BHYT</th>
+                  <th class="py-3 px-4">Bác Sĩ & Phòng Khám</th>
+                  <th class="py-3 px-4">Ngày & Giờ Khám</th>
+                  <th class="py-3 px-3">Hình Thức</th>
+                  <th class="py-3 px-4">Triệu Chứng</th>
+                  <th class="py-3 px-3">Trạng Thái</th>
+                  <th class="py-3 px-4 text-center">Hành Động Xử Lý</th>
+                </tr>
+              </thead>
+              <tbody id="allAppointmentsBody" class="divide-y divide-slate-100 font-medium">
+                <tr><td colspan="9" class="text-center py-10 text-slate-400">Đang tải danh sách phiếu khám...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== -->
+      <!-- TAB 3: BÁC SĨ & CHUYÊN KHOA -->
+      <!-- ========================================================== -->
+      <section id="tab-doctors" class="hidden space-y-6">
+        <!-- Sub-tabs chuyển đổi giữa Bác sĩ và Chuyên khoa -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-3">
+            <button onclick="switchDoctorSubTab('doctorsList')" id="subtab-doctorsList"
+              class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm transition">
+              <i class="fa-solid fa-user-doctor mr-1.5"></i> Danh sách Bác sĩ
+            </button>
+            <button onclick="switchDoctorSubTab('specialtiesList')" id="subtab-specialtiesList"
+              class="px-4 py-2 bg-white text-slate-600 hover:text-slate-900 text-xs font-bold rounded-xl border border-slate-200 transition">
+              <i class="fa-solid fa-hospital mr-1.5"></i> Danh mục Chuyên khoa
+            </button>
+          </div>
+
+          <div id="doctorSubTabActions">
+            <button onclick="openDoctorModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Thêm Bác Sĩ Mới</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3A. BẢNG DANH SÁCH BÁC SĨ -->
+        <div id="subview-doctorsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- 3B. BẢNG CHUYÊN KHOA -->
+        <div id="subview-specialtiesList" class="hidden bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 uppercase">Danh Mục Các Chuyên Khoa Trong Bệnh Viện</span>
+            <button onclick="openSpecialtyModal()" class="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-sm hover:opacity-95 transition">
+              <i class="fa-solid fa-plus mr-1"></i> Thêm Chuyên Khoa
+            </button>
+          </div>
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">Tên Chuyên Khoa</th>
+                <th class="py-3 px-4">Mã Code</th>
+                <th class="py-3 px-4">Vị Trí Phòng Khám</th>
+                <th class="py-3 px-4">Giá Khám Chuẩn</th>
+                <th class="py-3 px-4 text-center">Số Bác Sĩ</th>
+                <th class="py-3 px-4 text-right">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="specialtiesTableBody" class="divide-y divide-slate-100 font-medium">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: TRẢ KẾT QUẢ KHÁM BỆNH & KÊ ĐƠN THUỐC -->
+  <!-- ============================================================== -->
+  <div id="modalMedicalRecord" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+            <i class="fa-solid fa-file-medical"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm">Trả Kết Quả Khám & Kê Đơn Thuốc</h3>
+            <p id="modalRecordSub" class="text-[11px] text-white/80">BN: Nguyễn Văn An • Mã: MB-20261026-001</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalMedicalRecord')" class="text-white/80 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="medicalRecordForm" onsubmit="handleSaveMedicalRecord(event)" class="p-6 overflow-y-auto space-y-4 custom-scrollbar text-xs">
+        <input type="hidden" id="recordAppointmentId">
+        <input type="hidden" id="recordProfileId">
+        <input type="hidden" id="recordDoctorId">
+        <input type="hidden" id="recordSpecialtyName">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Chẩn đoán xác định *</label>
+            <input type="text" id="recordDiagnosis" required placeholder="VD: Viêm họng cấp, Tăng huyết áp độ 1..."
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 font-semibold text-slate-800">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Ngày khám</label>
+            <input type="date" id="recordExamDate" required
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <!-- 4 Chỉ số sinh tồn -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <label class="block font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider text-primary">
+            <i class="fa-solid fa-heart-pulse mr-1"></i> Chỉ số sinh tồn đo tại phòng khám:
+          </label>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <span class="text-[10px] text-slate-500 block mb-0.5">Huyết áp (mmHg)</span>
+              <input type="text" id="recordBP" placeholder="120/80"
+                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-slate-700 focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-500 block mb-0.5">Nhịp tim (bpm)</span>
+              <input type="number" id="recordHR" placeholder="78"
+                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-slate-700 focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-500 block mb-0.5">Đường huyết (mmol/L)</span>
+              <input type="number" step="0.1" id="recordBS" placeholder="5.4"
+                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-slate-700 focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-500 block mb-0.5">Cân nặng (kg)</span>
+              <input type="number" step="0.5" id="recordWeight" placeholder="65"
+                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-slate-700 focus:outline-none focus:border-primary">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Đơn thuốc kê toa</label>
+          <textarea id="recordPrescription" rows="3" placeholder="1. Amoxicillin 500mg (2 viên/ngày)&#10;2. Paracetamol 500mg khi đau đầu..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 font-mono"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Lời dặn dò của bác sĩ & Hẹn tái khám</label>
+          <textarea id="recordNotes" rows="2" placeholder="Uống nhiều nước ấm, tránh đồ cay nóng. Tái khám sau 7 ngày nếu không thuyên giảm..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeModal('modalMedicalRecord')" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition">
+            Đóng
+          </button>
+          <button type="submit" id="btnSaveRecord"
+            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Lưu & Hoàn Thành Khám</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: THÊM / CHỈNH SỬA BÁC SĨ -->
+  <!-- ============================================================== -->
+  <div id="modalDoctor" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 id="modalDoctorTitle" class="font-bold text-sm">Thêm Bác Sĩ Mới</h3>
+        <button onclick="closeModal('modalDoctor')" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="doctorForm" onsubmit="handleSaveDoctor(event)" class="p-6 overflow-y-auto space-y-3 custom-scrollbar text-xs">
+        <input type="hidden" id="docId">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Chuyên khoa trực thuộc *</label>
+            <select id="docSpecialtyId" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Học hàm / Học vị</label>
+            <select id="docDegree" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+              <option value="BS.CKI">BS.CKI (Bác sĩ Chuyên khoa 1)</option>
+              <option value="BS.CKII">BS.CKII (Bác sĩ Chuyên khoa 2)</option>
+              <option value="ThS.BS">ThS.BS (Thạc sĩ Bác sĩ)</option>
+              <option value="TS.BS">TS.BS (Tiến sĩ Bác sĩ)</option>
+              <option value="PGS.TS">PGS.TS (Phó Giáo sư)</option>
+              <option value="GS.TS">GS.TS (Giáo sư)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Họ và tên Bác sĩ *</label>
+          <input type="text" id="docFullName" required placeholder="VD: Hoàng Đức Thắng"
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-semibold">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Phòng khám chỉ định</label>
+            <input type="text" id="docRoom" placeholder="VD: Phòng Khám Nhi C101"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Số năm kinh nghiệm</label>
+            <input type="number" id="docExp" value="10"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Ảnh đại diện (Avatar URL)</label>
+          <input type="url" id="docAvatar" placeholder="https://images.unsplash.com/photo-..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tiểu sử & Chuyên môn</label>
+          <textarea id="docBio" rows="3" placeholder="Chuyên gia đầu ngành về Nhi khoa, tu nghiệp tại Pháp..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeModal('modalDoctor')" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition">
+            Đóng
+          </button>
+          <button type="submit" class="px-5 py-2 bg-primary hover:bg-primaryDark text-white font-bold rounded-xl shadow-md transition">
+            Lưu Bác Sĩ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: CẤU HÌNH LỊCH TRỰC BÁC SĨ (SCHEDULES) -->
+  <!-- ============================================================== -->
+  <div id="modalSchedule" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 bg-teal-800 text-white flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm">Cấu Hình Lịch Trực & Khung Giờ Khám</h3>
+          <p id="modalScheduleDocName" class="text-[11px] text-teal-200">BS: Hoàng Đức Thắng</p>
+        </div>
+        <button onclick="closeModal('modalSchedule')" class="text-teal-200 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 custom-scrollbar text-xs">
+        <input type="hidden" id="schedDoctorId">
+
+        <!-- Form thêm slot nhanh -->
+        <div class="p-4 bg-teal-50/60 rounded-xl border border-teal-200 space-y-3">
+          <h5 class="font-bold text-teal-900 uppercase text-[11px]"><i class="fa-solid fa-plus-circle mr-1"></i> Thêm Khung Giờ Mới:</h5>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">Ngày trực:</label>
+              <input type="date" id="newSchedDate" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-teal-600">
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">Khung giờ:</label>
+              <select id="newSchedSlot" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-teal-600">
+                <option value="08:00 - 08:30">08:00 - 08:30 (Sáng)</option>
+                <option value="08:30 - 09:00">08:30 - 09:00 (Sáng)</option>
+                <option value="09:00 - 09:30">09:00 - 09:30 (Sáng)</option>
+                <option value="09:30 - 10:00">09:30 - 10:00 (Sáng)</option>
+                <option value="10:00 - 10:30">10:00 - 10:30 (Sáng)</option>
+                <option value="14:00 - 14:30">14:00 - 14:30 (Chiều)</option>
+                <option value="14:30 - 15:00">14:30 - 15:00 (Chiều)</option>
+                <option value="15:00 - 15:30">15:00 - 15:30 (Chiều)</option>
+                <option value="15:30 - 16:00">15:30 - 16:00 (Chiều)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">Số BN tối đa:</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="newSchedMax" value="5" class="w-20 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold">
+                <button type="button" onclick="handleAddDoctorSchedule()" class="flex-1 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition text-xs shadow-sm">
+                  Thêm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng danh sách các slot hiện tại -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-bold text-slate-700 uppercase text-[11px]">Danh sách khung giờ khám hiện có:</h5>
+            <span id="schedTotalCount" class="text-teal-700 font-bold">0 khung giờ</span>
+          </div>
+          <div class="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold sticky top-0 border-b border-slate-200">
+                <tr>
+                  <th class="py-2 px-3">Ngày</th>
+                  <th class="py-2 px-3">Khung Giờ</th>
+                  <th class="py-2 px-3 text-center">Đã Đặt / Tối Đa</th>
+                  <th class="py-2 px-3 text-center">Trạng Thái</th>
+                  <th class="py-2 px-3 text-right">Xóa</th>
+                </tr>
+              </thead>
+              <tbody id="doctorSchedulesTableBody" class="divide-y divide-slate-100 font-medium">
+                <tr><td colspan="5" class="text-center py-4 text-slate-400">Đang tải lịch...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end">
+          <button type="button" onclick="closeModal('modalSchedule')" class="px-5 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition">
+            Xong
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 4: THÊM / SỬA CHUYÊN KHOA -->
+  <!-- ============================================================== -->
+  <div id="modalSpecialty" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
+      <div class="px-6 py-4 bg-primary text-white flex items-center justify-between">
+        <h3 id="modalSpecialtyTitle" class="font-bold text-sm">Thêm Chuyên Khoa</h3>
+        <button onclick="closeModal('modalSpecialty')" class="text-white/80 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="specialtyForm" onsubmit="handleSaveSpecialty(event)" class="p-6 space-y-3 text-xs">
+        <input type="hidden" id="specId">
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tên Chuyên khoa *</label>
+          <input type="text" id="specName" required placeholder="VD: Tim Mạch, Da Liễu, Cơ Xương Khớp..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-semibold">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Mã code</label>
+            <input type="text" id="specCode" placeholder="cardiology, dermatology..."
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-mono text-[11px]">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Giá khám chuẩn (VNĐ)</label>
+            <input type="number" id="specBasePrice" value="250000" step="10000"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Vị trí phòng khám</label>
+          <input type="text" id="specRoomLocation" placeholder="VD: Tầng 2 - Tòa A (Khu A201)"
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Mô tả tóm tắt</label>
+          <textarea id="specDescription" rows="2" placeholder="Chăm sóc và điều trị chuyên sâu..."
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeModal('modalSpecialty')" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition">
+            Đóng
+          </button>
+          <button type="submit" class="px-5 py-2 bg-primary hover:bg-primaryDark text-white font-bold rounded-xl shadow-md transition">
+            Lưu Chuyên Khoa
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 4. JAVASCRIPT LOGIC CHO ADMIN PORTAL -->
+  <!-- ============================================================== -->
+  <script>
+    // State quản lý toàn cục
+    let currentTab = 'dashboard';
+    let specialtyChartInstance = null;
+    let statusChartInstance = null;
+    let searchDebounceTimer = null;
+    let cachedSpecialties = [];
+
+    // Kiểm tra Auth khi load trang
+    document.addEventListener('DOMContentLoaded', () => {
+      startLiveClock();
+      checkAuth();
+      // Set ngày mặc định cho form tạo slot là hôm nay
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (document.getElementById('newSchedDate')) {
+        document.getElementById('newSchedDate').value = todayStr;
+      }
+    });
+
+    function startLiveClock() {
+      const update = () => {
+        const now = new Date();
+        const str = now.toLocaleTimeString('vi-VN') + ' • ' + now.toLocaleDateString('vi-VN');
+        const el = document.getElementById('liveClock');
+        if (el) el.innerHTML = `<i class="fa-regular fa-clock mr-1 text-primary"></i> ${str}`;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    function checkAuth() {
+      const token = localStorage.getItem('medbook_admin_token');
+      const loginOverlay = document.getElementById('loginOverlay');
+      if (!token) {
+        loginOverlay.classList.remove('hidden');
+      } else {
+        loginOverlay.classList.add('hidden');
+        loadAdminUserInfo();
+        loadDashboardData();
+        loadSpecialtiesForSelect();
+      }
+    }
+
+    function fillDemoAdmin() {
+      document.getElementById('loginUsername').value = '0900000000';
+      document.getElementById('loginPassword').value = '123456';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const phoneOrEmail = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const alertBox = document.getElementById('loginAlert');
+      const btn = document.getElementById('loginBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang xác thực...`;
+      alertBox.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phoneOrEmail, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const user = data.data.user;
+          if (user.role !== 'admin' && user.role !== 'doctor') {
+            throw new Error('Tài khoản này không có quyền Quản trị (Chỉ dành cho Admin / Bác sĩ).');
+          }
+          localStorage.setItem('medbook_admin_token', data.data.token);
+          localStorage.setItem('medbook_admin_user', JSON.stringify(user));
+          document.getElementById('loginOverlay').classList.add('hidden');
+          loadAdminUserInfo();
+          loadDashboardData();
+          loadSpecialtiesForSelect();
+        } else {
+          throw new Error(data.message || 'Đăng nhập không thành công.');
+        }
+      } catch (err) {
+        alertBox.classList.remove('hidden');
+        document.getElementById('loginAlertText').textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Đăng nhập Quản Trị</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi Cổng Quản Trị MEDBOOK?')) {
+        localStorage.removeItem('medbook_admin_token');
+        localStorage.removeItem('medbook_admin_user');
+        window.location.reload();
+      }
+    }
+
+    function loadAdminUserInfo() {
+      const userStr = localStorage.getItem('medbook_admin_user');
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          document.getElementById('adminName').textContent = u.full_name || 'Quản Trị Viên';
+          document.getElementById('adminRole').textContent = (u.role === 'admin' ? 'HOSPITAL ADMIN' : 'BÁC SĨ ĐIỀU PHỐI');
+          if (u.avatar_url) document.getElementById('adminAvatar').src = u.avatar_url;
+        } catch (_) {}
+      }
+    }
+
+    function getAuthHeaders() {
+      const token = localStorage.getItem('medbook_admin_token');
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    // ==============================================================
+    // CHUYỂN TAB TRANG CHỦ
+    // ==============================================================
+    function switchTab(tab) {
+      currentTab = tab;
+      const tabs = ['dashboard', 'appointments', 'doctors'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        const nav = document.getElementById(`nav-${t}`);
+        if (t === tab) {
+          el.classList.remove('hidden');
+          nav.className = "w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-white bg-primary shadow-sm shadow-sky-500/20";
+        } else {
+          el.classList.add('hidden');
+          nav.className = "w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:text-white hover:bg-sidebarHover";
+        }
+      });
+
+      const titles = {
+        dashboard: 'Bảng Điều Khiển Tổng Quan',
+        appointments: 'Điều Phối Phiếu Đặt Khám Bệnh Viện',
+        doctors: 'Quản Lý Đội Ngũ Bác Sĩ & Chuyên Khoa'
+      };
+      document.getElementById('topbarTitle').textContent = titles[tab];
+
+      if (tab === 'dashboard') loadDashboardData();
+      if (tab === 'appointments') loadAppointmentsTable();
+      if (tab === 'doctors') loadDoctorsList();
+    }
+
+    function refreshCurrentTab() {
+      switchTab(currentTab);
+    }
+
+    // ==============================================================
+    // TAB 1: DASHBOARD DATA & CHARTS
+    // ==============================================================
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
+        if (res.status === 401 || res.status === 403) return checkAuth();
+        const json = await res.json();
+        if (!json.success) return;
+
+        const d = json.data;
+        document.getElementById('statTodayAppts').textContent = d.summary.today_appointments || 0;
+        document.getElementById('statPendingAppts').textContent = d.status_counts.pending || 0;
+        document.getElementById('statCompletedAppts').textContent = d.status_counts.completed || 0;
+        document.getElementById('statTotalDoctors').textContent = d.summary.total_doctors || 0;
+        document.getElementById('badgePendingCount').textContent = d.status_counts.pending || 0;
+
+        document.getElementById('labelConfirmed').textContent = d.status_counts.confirmed || 0;
+        document.getElementById('labelCompleted').textContent = d.status_counts.completed || 0;
+        document.getElementById('labelPending').textContent = d.status_counts.pending || 0;
+        document.getElementById('labelCancelled').textContent = d.status_counts.cancelled || 0;
+
+        renderSpecialtyChart(d.specialty_stats);
+        renderStatusDoughnutChart(d.status_counts);
+        renderRecentAppointments(d.recent_appointments);
+      } catch (e) {
+        console.error('Lỗi tải thống kê:', e);
+      }
+    }
+
+    function renderSpecialtyChart(stats) {
+      const ctx = document.getElementById('specialtyChart').getContext('2d');
+      if (specialtyChartInstance) specialtyChartInstance.destroy();
+
+      const labels = stats.map(s => s.name);
+      const dataCounts = stats.map(s => s.appointment_count);
+
+      specialtyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Số ca đặt khám',
+            data: dataCounts,
+            backgroundColor: '#0284C7',
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderStatusDoughnutChart(counts) {
+      const ctx = document.getElementById('statusDoughnutChart').getContext('2d');
+      if (statusChartInstance) statusChartInstance.destroy();
+
+      statusChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Đã xác nhận', 'Đã khám', 'Chờ duyệt', 'Đã hủy'],
+          datasets: [{
+            data: [counts.confirmed, counts.completed, counts.pending, counts.cancelled],
+            backgroundColor: ['#0284C7', '#10B981', '#F59E0B', '#EF4444'],
+            borderWidth: 2,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    function renderRecentAppointments(list) {
+      const tbody = document.getElementById('recentAppointmentsBody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Chưa có phiếu khám nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(a => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-4 text-center font-bold text-primary">#${a.queue_number}</td>
+          <td class="py-3 px-4 font-bold text-slate-800">${a.booking_code}</td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-slate-800">${a.patient_name}</div>
+            <div class="text-[11px] text-slate-400">${a.patient_phone || "Không có SĐT"}</div>
+          </td>
+          <td class="py-3 px-4">
+            <div class="text-slate-800 font-semibold">${a.degree || ''} ${a.doctor_name}</div>
+            <div class="text-[11px] text-primary">${a.specialty_name}</div>
+          </td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-slate-800">${a.time_slot}</div>
+            <div class="text-[11px] text-slate-500">${a.work_date}</div>
+          </td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.exam_type === 'BHYT' ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-slate-100 text-slate-600'}">
+              ${a.exam_type}
+            </span>
+          </td>
+          <td class="py-3 px-3">${renderStatusBadge(a.status)}</td>
+          <td class="py-3 px-4 text-right">
+            ${a.status === 'pending' ? `<button onclick="quickConfirm(${a.id})" class="px-2.5 py-1 bg-primary text-white rounded-lg hover:bg-primaryDark text-[11px] font-bold transition">Duyệt ngay</button>` : `<button onclick="switchTab('appointments')" class="text-slate-400 hover:text-primary"><i class="fa-solid fa-eye"></i></button>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderStatusBadge(status) {
+      const map = {
+        pending: '<span class="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-bold text-[10px]">Chờ xác nhận</span>',
+        confirmed: '<span class="px-2 py-0.5 bg-sky-50 text-primary border border-sky-200 rounded-full font-bold text-[10px]">Đã xác nhận</span>',
+        completed: '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full font-bold text-[10px]">Đã khám xong</span>',
+        cancelled: '<span class="px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded-full font-bold text-[10px]">Đã hủy</span>'
+      };
+      return map[status] || `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold text-[10px]">${status}</span>`;
+    }
+
+    // ==============================================================
+    // TAB 2: QUẢN LÝ LỊCH HẸN & ĐIỀU PHỐI PHIẾU KHÁM
+    // ==============================================================
+    async function loadAppointmentsTable() {
+      const tbody = document.getElementById('allAppointmentsBody');
+      const date = document.getElementById('filterDate').value;
+      const status = document.getElementById('filterStatus').value;
+      const search = document.getElementById('filterSearch').value.trim();
+
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải dữ liệu...</td></tr>`;
+
+      try {
+        const params = new URLSearchParams();
+        if (date) params.append('date', date);
+        if (status && status !== 'all') params.append('status', status);
+        if (search) params.append('search', search);
+
+        const res = await fetch(`/api/admin/appointments?${params.toString()}`, { headers: getAuthHeaders() });
+        if (res.status === 401 || res.status === 403) return checkAuth();
+        const json = await res.json();
+
+        if (!json.success) throw new Error(json.message);
+
+        const list = json.data;
+        document.getElementById('totalAppointmentsCount').textContent = list.length;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-slate-400 font-semibold"><i class="fa-solid fa-folder-open text-2xl block mb-2 text-slate-300"></i>Không tìm thấy phiếu đặt khám nào theo điều kiện lọc.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(a => {
+          const apptDataAttr = encodeURIComponent(JSON.stringify(a));
+          return `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="py-3 px-3 text-center">
+                <span class="inline-block w-7 h-7 leading-7 bg-primaryLight text-primary font-bold rounded-lg text-xs">
+                  ${a.queue_number}
+                </span>
+              </td>
+              <td class="py-3 px-4 font-bold text-slate-800">
+                <div>${a.booking_code}</div>
+                <div class="text-[10px] text-slate-400 font-normal">Tạo lúc: ${a.created_at || ""}</div>
+              </td>
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-900">${a.patient_name} (${a.relationship || "Bản thân"})</div>
+                <div class="text-[11px] text-slate-500"><i class="fa-solid fa-phone text-[10px] mr-1 text-slate-400"></i>${a.patient_phone || a.user_phone || "Không có SĐT"}</div>
+                ${a.bhyt_code ? `<div class="text-[10px] text-indigo-600 font-semibold"><i class="fa-solid fa-id-card text-[10px] mr-1"></i>BHYT: ${a.bhyt_code}</div>` : ''}
+              </td>
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-800">${a.degree || ''} ${a.doctor_name}</div>
+                <div class="text-[11px] text-primary font-semibold">${a.specialty_name}</div>
+                <div class="text-[10px] text-slate-400">${a.room_number || a.room_location || ""}</div>
+              </td>
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-800">${a.time_slot}</div>
+                <div class="text-[11px] text-slate-600 font-semibold">${a.work_date}</div>
+              </td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.exam_type === 'BHYT' ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-slate-100 text-slate-600'}">
+                  ${a.exam_type}
+                </span>
+              </td>
+              <td class="py-3 px-4 max-w-xs">
+                <p class="truncate text-slate-600 text-[11px]" title="${a.symptoms || "Không ghi"}">
+                  ${a.symptoms || '<span class="text-slate-300 italic">Không ghi</span>'}
+                </p>
+              </td>
+              <td class="py-3 px-3">${renderStatusBadge(a.status)}</td>
+              <td class="py-3 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  ${a.status === 'pending' ? `
+                    <button onclick="quickConfirm(${a.id})" title="Duyệt phiếu khám"
+                      class="px-2.5 py-1 bg-primary text-white hover:bg-primaryDark rounded-lg font-bold text-[11px] transition shadow-sm">
+                      <i class="fa-solid fa-check mr-1"></i>Duyệt
+                    </button>
+                  ` : ''}
+
+                  ${a.status !== 'completed' && a.status !== 'cancelled' ? `
+                    <button onclick="openMedicalRecordModal('${apptDataAttr}')" title="Nhập kết quả & Kê đơn thuốc"
+                      class="px-2.5 py-1 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-bold text-[11px] transition shadow-sm">
+                      <i class="fa-solid fa-stethoscope mr-1"></i>Trả KQ & Đơn
+                    </button>
+                  ` : ''}
+
+                  ${a.status === 'completed' ? `
+                    <span class="text-emerald-600 font-bold text-[11px]"><i class="fa-solid fa-circle-check mr-1"></i>Đã trả KQ</span>
+                  ` : ''}
+
+                  ${a.status !== 'cancelled' && a.status !== 'completed' ? `
+                    <button onclick="cancelAppointmentAdmin(${a.id})" title="Hủy phiếu khám"
+                      class="px-2 py-1 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-lg text-[11px] font-bold transition">
+                      <i class="fa-solid fa-ban"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-red-500 font-bold">${err.message}</td></tr>`;
+      }
+    }
+
+    function debounceAppointmentSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(loadAppointmentsTable, 350);
+    }
+
+    function resetAppointmentFilters() {
+      document.getElementById('filterDate').value = '';
+      document.getElementById('filterStatus').value = 'all';
+      document.getElementById('filterSearch').value = '';
+      loadAppointmentsTable();
+    }
+
+    async function quickConfirm(id) {
+      if (!confirm('Xác nhận duyệt phiếu khám này?')) return;
+      try {
+        const res = await fetch(`/api/admin/appointments/${id}/status`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: 'confirmed' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadAppointmentsTable();
+          if (currentTab === 'dashboard') loadDashboardData();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (e) {
+        alert('Lỗi mạng: ' + e.message);
+      }
+    }
+
+    async function cancelAppointmentAdmin(id) {
+      const reason = prompt('Nhập lý do hủy phiếu khám (sẽ thông báo cho bệnh nhân):', 'Bác sĩ bận ca mổ đột xuất / Thay đổi lịch tiếp đón');
+      if (reason === null) return;
+
+      try {
+        const res = await fetch(`/api/admin/appointments/${id}/status`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: 'cancelled', cancelled_reason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã hủy phiếu khám thành công.');
+          loadAppointmentsTable();
+          if (currentTab === 'dashboard') loadDashboardData();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (e) {
+        alert('Lỗi mạng: ' + e.message);
+      }
+    }
+
+    // ==============================================================
+    // MODAL TRẢ KẾT QUẢ KHÁM BỆNH & KÊ ĐƠN THUỐC
+    // ==============================================================
+    function openMedicalRecordModal(encodedAppt) {
+      const appt = JSON.parse(decodeURIComponent(encodedAppt));
+      document.getElementById('recordAppointmentId').value = appt.id;
+      document.getElementById('recordProfileId').value = appt.profile_id;
+      document.getElementById('recordDoctorId').value = appt.doctor_id;
+      document.getElementById('recordSpecialtyName').value = appt.specialty_name || '';
+
+      document.getElementById('modalRecordSub').textContent = `Bệnh nhân: ${appt.patient_name} • Bác sĩ: ${appt.doctor_name} • Mã phiếu: ${appt.booking_code}`;
+      document.getElementById('recordExamDate').value = appt.work_date || new Date().toISOString().split('T')[0];
+      document.getElementById('recordDiagnosis').value = '';
+      document.getElementById('recordPrescription').value = '';
+      document.getElementById('recordNotes').value = '';
+      document.getElementById('recordBP').value = '120/80';
+      document.getElementById('recordHR').value = '75';
+      document.getElementById('recordBS').value = '5.5';
+      document.getElementById('recordWeight').value = '65';
+
+      document.getElementById('modalMedicalRecord').classList.remove('hidden');
+      document.getElementById('modalMedicalRecord').classList.add('flex');
+    }
+
+    async function handleSaveMedicalRecord(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveRecord');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang lưu...`;
+
+      const payload = {
+        appointment_id: document.getElementById('recordAppointmentId').value,
+        profile_id: document.getElementById('recordProfileId').value,
+        doctor_id: document.getElementById('recordDoctorId').value,
+        specialty_name: document.getElementById('recordSpecialtyName').value,
+        diagnosis: document.getElementById('recordDiagnosis').value.trim(),
+        exam_date: document.getElementById('recordExamDate').value,
+        prescription: document.getElementById('recordPrescription').value.trim(),
+        doctor_notes: document.getElementById('recordNotes').value.trim(),
+        blood_pressure: document.getElementById('recordBP').value.trim(),
+        heart_rate: parseInt(document.getElementById('recordHR').value, 10) || null,
+        blood_sugar: parseFloat(document.getElementById('recordBS').value) || null,
+        weight: parseFloat(document.getElementById('recordWeight').value) || null
+      };
+
+      try {
+        const res = await fetch('/api/admin/medical-records', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã lưu kết quả khám & đơn thuốc thành công! Trạng thái phiếu khám đã chuyển thành ĐÃ KHÁM XONG (completed) và đồng bộ trực tiếp về ứng dụng của người bệnh.');
+          closeModal('modalMedicalRecord');
+          loadAppointmentsTable();
+          if (currentTab === 'dashboard') loadDashboardData();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Lưu & Hoàn Thành Khám</span>`;
+      }
+    }
+
+    // ==============================================================
+    // TAB 3: BÁC SĨ & CHUYÊN KHOA
+    // ==============================================================
+    function switchDoctorSubTab(sub) {
+      if (sub === 'doctorsList') {
+        document.getElementById('subview-doctorsList').classList.remove('hidden');
+        document.getElementById('subview-specialtiesList').classList.add('hidden');
+        document.getElementById('subtab-doctorsList').className = "px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm transition";
+        document.getElementById('subtab-specialtiesList').className = "px-4 py-2 bg-white text-slate-600 hover:text-slate-900 text-xs font-bold rounded-xl border border-slate-200 transition";
+        document.getElementById('doctorSubTabActions').innerHTML = `
+          <button onclick="openDoctorModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus"></i> <span>Thêm Bác Sĩ Mới</span>
+          </button>
+        `;
+        loadDoctorsList();
+      } else {
+        document.getElementById('subview-doctorsList').classList.add('hidden');
+        document.getElementById('subview-specialtiesList').classList.remove('hidden');
+        document.getElementById('subtab-specialtiesList').className = "px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm transition";
+        document.getElementById('subtab-doctorsList').className = "px-4 py-2 bg-white text-slate-600 hover:text-slate-900 text-xs font-bold rounded-xl border border-slate-200 transition";
+        document.getElementById('doctorSubTabActions').innerHTML = `
+          <button onclick="openSpecialtyModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> <span>Thêm Chuyên Khoa Mới</span>
+          </button>
+        `;
+        loadSpecialtiesTable();
+      }
+    }
+
+    async function loadDoctorsList() {
+      const container = document.getElementById('subview-doctorsList');
+      container.innerHTML = `<div class="col-span-3 text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải danh sách bác sĩ...</div>`;
+
+      try {
+        const res = await fetch('/api/admin/doctors', { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+
+        const list = json.data;
+        if (list.length === 0) {
+          container.innerHTML = `<div class="col-span-3 text-center py-10 text-slate-400">Chưa có bác sĩ nào.</div>`;
+          return;
+        }
+
+        container.innerHTML = list.map(doc => `
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition">
+            <div>
+              <div class="flex items-start gap-4 mb-3">
+                <img src="${doc.avatar_url || '/images/doctors/doc_1.jpg'}" alt="${doc.full_name}"
+                  class="w-16 h-16 rounded-2xl object-cover border border-slate-200 flex-shrink-0 shadow-sm">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-2 py-0.5 bg-sky-50 text-primary border border-sky-200 rounded-lg text-[10px] font-bold">${doc.degree}</span>
+                    <span class="text-xs text-amber-500 font-bold ml-auto"><i class="fa-solid fa-star mr-1"></i>${doc.rating}</span>
+                  </div>
+                  <h4 class="font-bold text-slate-900 text-sm mt-1 truncate">${doc.full_name}</h4>
+                  <p class="text-primary text-xs font-semibold">${doc.specialty_name}</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5"><i class="fa-solid fa-door-open mr-1"></i>${doc.room_number || "Phòng khám 101"}</p>
+                </div>
+              </div>
+              <p class="text-slate-500 text-xs line-clamp-2 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-100">${doc.bio || "Bác sĩ giàu kinh nghiệm"}</p>
+              <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium pt-2 border-t border-slate-100">
+                <span>Kinh nghiệm: <strong>${doc.experienceYears || doc.experience_years} năm</strong></span>
+                <span class="text-teal-700 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100 font-bold">${doc.schedule_count || 0} ca trực</span>
+              </div>
+            </div>
+
+            <div class="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button onclick="openScheduleModal(${doc.id}, '${encodeURIComponent(doc.full_name)}')"
+                class="flex-1 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1">
+                <i class="fa-regular fa-calendar-plus text-xs"></i> Lịch trực
+              </button>
+              <button onclick="openDoctorModal(${JSON.stringify(doc).replace(/"/g, '&quot;')})"
+                class="p-1.5 text-slate-500 hover:text-primary hover:bg-slate-100 rounded-lg transition" title="Sửa">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteDoctorAdmin(${doc.id})"
+                class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Xóa">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="col-span-3 text-center py-6 text-red-500">${err.message}</div>`;
+      }
+    }
+
+    async function loadSpecialtiesTable() {
+      const tbody = document.getElementById('specialtiesTableBody');
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Đang tải danh mục chuyên khoa...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/admin/specialties', { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+
+        const list = json.data;
+        cachedSpecialties = list;
+
+        tbody.innerHTML = list.map(s => `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3 px-4 text-slate-400 font-bold">#${s.id}</td>
+            <td class="py-3 px-4 font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-sky-50 text-primary flex items-center justify-center text-xs"><i class="fa-solid fa-stethoscope"></i></span>
+              <span>${s.name}</span>
+            </td>
+            <td class="py-3 px-4 font-mono text-[11px] text-slate-500">${s.code}</td>
+            <td class="py-3 px-4 text-slate-600 font-medium">${s.room_location}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">${new Intl.NumberFormat('vi-VN').format(s.base_price)} đ</td>
+            <td class="py-3 px-4 text-center">
+              <span class="px-2.5 py-1 bg-sky-50 text-primary border border-sky-100 font-bold rounded-lg text-xs">${s.doctor_count || 0} BS</span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="openSpecialtyModal(${JSON.stringify(s).replace(/"/g, '&quot;')})" class="text-slate-500 hover:text-primary p-1.5 rounded-lg transition mr-1" title="Sửa">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteSpecialtyAdmin(${s.id})" class="text-slate-400 hover:text-red-500 p-1.5 rounded-lg transition" title="Xóa">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadSpecialtiesForSelect() {
+      try {
+        const res = await fetch('/api/admin/specialties', { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (json.success) {
+          cachedSpecialties = json.data;
+          const select = document.getElementById('docSpecialtyId');
+          select.innerHTML = cachedSpecialties.map(s => `<option value="${s.id}">${s.name} (${s.room_location})</option>`).join('');
+        }
+      } catch (_) {}
+    }
+
+    // ==============================================================
+    // MODAL ACTIONS: DOCTORS & SCHEDULES
+    // ==============================================================
+    function openDoctorModal(doc = null) {
+      document.getElementById('modalDoctorTitle').textContent = doc ? 'Chỉnh Sửa Bác Sĩ' : 'Thêm Bác Sĩ Mới';
+      document.getElementById('docId').value = doc ? doc.id : '';
+      document.getElementById('docFullName').value = doc ? doc.full_name : '';
+      document.getElementById('docDegree').value = doc ? doc.degree : 'BS.CKI';
+      document.getElementById('docSpecialtyId').value = doc ? doc.specialty_id : (cachedSpecialties[0]?.id || 1);
+      document.getElementById('docRoom').value = doc ? doc.room_number : 'Phòng Khám 101';
+      document.getElementById('docExp').value = doc ? (doc.experienceYears || doc.experience_years) : 8;
+      document.getElementById('docAvatar').value = doc ? doc.avatar_url : '/images/doctors/doc_1.jpg';
+      document.getElementById('docBio').value = doc ? doc.bio : '';
+
+      document.getElementById('modalDoctor').classList.remove('hidden');
+      document.getElementById('modalDoctor').classList.add('flex');
+    }
+
+    async function handleSaveDoctor(e) {
+      e.preventDefault();
+      const id = document.getElementById('docId').value;
+      const payload = {
+        specialty_id: parseInt(document.getElementById('docSpecialtyId').value, 10),
+        full_name: document.getElementById('docFullName').value.trim(),
+        degree: document.getElementById('docDegree').value,
+        room_number: document.getElementById('docRoom').value.trim(),
+        experience_years: parseInt(document.getElementById('docExp').value, 10) || 5,
+        avatar_url: document.getElementById('docAvatar').value.trim(),
+        bio: document.getElementById('docBio').value.trim(),
+        hospital_name: 'Bệnh viện Đa khoa Quốc tế MEDBOOK'
+      };
+
+      try {
+        const url = id ? `/api/admin/doctors/${id}` : '/api/admin/doctors';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã lưu thông tin bác sĩ thành công!');
+          closeModal('modalDoctor');
+          loadDoctorsList();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      }
+    }
+
+    async function deleteDoctorAdmin(id) {
+      if (!confirm('Bạn có chắc chắn muốn xóa bác sĩ này khỏi hệ thống?')) return;
+      try {
+        const res = await fetch(`/api/admin/doctors/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã xóa bác sĩ.');
+          loadDoctorsList();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+
+    // Schedules
+    let currentSchedDocId = null;
+    async function openScheduleModal(doctorId, encodedName) {
+      currentSchedDocId = doctorId;
+      document.getElementById('schedDoctorId').value = doctorId;
+      document.getElementById('modalScheduleDocName').textContent = `Bác sĩ: ${decodeURIComponent(encodedName)}`;
+      document.getElementById('modalSchedule').classList.remove('hidden');
+      document.getElementById('modalSchedule').classList.add('flex');
+      loadDoctorSchedulesList();
+    }
+
+    async function loadDoctorSchedulesList() {
+      const tbody = document.getElementById('doctorSchedulesTableBody');
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">Đang tải lịch...</td></tr>`;
+
+      try {
+        const res = await fetch(`/api/admin/doctors/${currentSchedDocId}/schedules`, { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+
+        const list = json.data;
+        document.getElementById('schedTotalCount').textContent = `${list.length} khung giờ`;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">Bác sĩ này chưa có khung giờ khám nào. Hãy thêm khung giờ mới phía trên.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(s => `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="py-2 px-3 font-semibold text-slate-800">${s.work_date}</td>
+            <td class="py-2 px-3 font-bold text-teal-800">${s.time_slot}</td>
+            <td class="py-2 px-3 text-center">
+              <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${s.booked_count >= s.max_patients ? 'bg-red-50 text-red-600' : 'bg-teal-50 text-teal-700'}">
+                ${s.booked_count} / ${s.max_patients}
+              </span>
+            </td>
+            <td class="py-2 px-3 text-center">
+              <span class="text-[10px] font-bold ${s.status === 'available' ? 'text-emerald-600' : (s.status === 'full' ? 'text-red-500' : 'text-slate-400')}">
+                ${s.status === 'available' ? 'Còn trống' : (s.status === 'full' ? 'Đầy slot' : 'Đã hủy')}
+              </span>
+            </td>
+            <td class="py-2 px-3 text-right">
+              ${s.booked_count === 0 ? `
+                <button onclick="deleteScheduleAdmin(${s.id})" class="text-slate-400 hover:text-red-500 p-1" title="Xóa slot">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              ` : `<span class="text-[10px] text-slate-300 italic" title="Đã có bệnh nhân đặt">Có BN</span>`}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">${err.message}</td></tr>`;
+      }
+    }
+
+    async function handleAddDoctorSchedule() {
+      const date = document.getElementById('newSchedDate').value;
+      const slot = document.getElementById('newSchedSlot').value;
+      const maxPatients = parseInt(document.getElementById('newSchedMax').value, 10) || 5;
+
+      if (!date) return alert('Vui lòng chọn ngày trực.');
+
+      try {
+        const res = await fetch(`/api/admin/doctors/${currentSchedDocId}/schedules`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ work_date: date, time_slot: slot, max_patients: maxPatients })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadDoctorSchedulesList();
+          loadDoctorsList();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (e) {
+        alert('Lỗi: ' + e.message);
+      }
+    }
+
+    async function deleteScheduleAdmin(scheduleId) {
+      if (!confirm('Xóa khung giờ trực này?')) return;
+      try {
+        const res = await fetch(`/api/admin/schedules/${scheduleId}`, { method: 'DELETE', headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.success) {
+          loadDoctorSchedulesList();
+          loadDoctorsList();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (e) {
+        alert('Lỗi: ' + e.message);
+      }
+    }
+
+    // ==============================================================
+    // MODAL ACTIONS: SPECIALTIES
+    // ==============================================================
+    function openSpecialtyModal(spec = null) {
+      document.getElementById('modalSpecialtyTitle').textContent = spec ? 'Chỉnh Sửa Chuyên Khoa' : 'Thêm Chuyên Khoa Mới';
+      document.getElementById('specId').value = spec ? spec.id : '';
+      document.getElementById('specName').value = spec ? spec.name : '';
+      document.getElementById('specCode').value = spec ? spec.code : '';
+      document.getElementById('specBasePrice').value = spec ? spec.base_price : 250000;
+      document.getElementById('specRoomLocation').value = spec ? spec.room_location : 'Tầng 2 - Tòa A';
+      document.getElementById('specDescription').value = spec ? spec.description : '';
+
+      document.getElementById('modalSpecialty').classList.remove('hidden');
+      document.getElementById('modalSpecialty').classList.add('flex');
+    }
+
+    async function handleSaveSpecialty(e) {
+      e.preventDefault();
+      const id = document.getElementById('specId').value;
+      const payload = {
+        name: document.getElementById('specName').value.trim(),
+        code: document.getElementById('specCode').value.trim(),
+        base_price: parseFloat(document.getElementById('specBasePrice').value) || 200000,
+        room_location: document.getElementById('specRoomLocation').value.trim(),
+        description: document.getElementById('specDescription').value.trim(),
+        icon_url: 'medical_services_outlined'
+      };
+
+      try {
+        const url = id ? `/api/admin/specialties/${id}` : '/api/admin/specialties';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã lưu chuyên khoa thành công!');
+          closeModal('modalSpecialty');
+          loadSpecialtiesTable();
+          loadSpecialtiesForSelect();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      }
+    }
+
+    async function deleteSpecialtyAdmin(id) {
+      if (!confirm('Xóa chuyên khoa này khỏi bệnh viện?')) return;
+      try {
+        const res = await fetch(`/api/admin/specialties/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        const data = await res.json();
+        if (data.success) {
+          alert('Đã xóa chuyên khoa.');
+          loadSpecialtiesTable();
+          loadSpecialtiesForSelect();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+
+    function closeModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+  </script>
+</body>
+</html>
+

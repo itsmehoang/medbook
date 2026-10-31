@@ -1,0 +1,31 @@
+{
+  "name": "medbook-backend",
+  "version": "1.0.0",
+  "description": "RESTful API Backend cho Hệ thống Quản lý Y tế & Đặt lịch khám bệnh MEDBOOK",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "medbook",
+    "doctor-booking",
+    "healthcare",
+    "express",
+    "mysql",
+    "flutter-backend"
+  ],
+  "author": "MedBook Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.12.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
+
