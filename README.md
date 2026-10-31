@@ -75,10 +75,10 @@
       <td align="center"><b>Đặt lịch hẹn</b></td>
     </tr>
     <tr>
-      <td><img src="https://github.com/user-attachments/assets/41f63e75-f05a-429f-b415-3864d239735a"" width="200"/></td>
+      <td><img src="https://github.com/user-attachments/assets/41f63e75-f05a-429f-b415-3864d239735a" width="200"/></td>
       <td><img src="https://github.com/user-attachments/assets/f46135d4-5bd5-4f89-9c08-6e04239eed95" width="200"/></td>
       <td><img src="https://github.com/user-attachments/assets/6e9878a1-f6d6-411b-b277-ea376db71d1b" width="200"/></td>
-      <td><img src="https://via.placeholder.com/200x400.png?text=Booking+Screen" width="200"/></td>
+      <td><img src="https://github.com/user-attachments/assets/aec6e4ef-d76d-4cfe-bba5-16ceb9438d9b" width="200"/></td>
     </tr>
   </table>
 </div>
