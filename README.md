@@ -55,8 +55,8 @@
 | :--- | :--- | :--- |
 | **Framework** | [Flutter](https://flutter.dev/) | Xây dựng giao diện đa nền tảng (Android / iOS) |
 | **Ngôn ngữ** | [Dart](https://dart.dev/) | Ngôn ngữ lập trình chính của ứng dụng |
-| **Quản lý trạng thái** | Provider / Bloc / GetX | Quản lý state và luồng dữ liệu trong ứng dụng *(chỉnh lại theo thư viện bạn dùng)* |
-| **Backend / Database** | Firebase / Node.js & MySQL | Lưu trữ dữ liệu người dùng, bác sĩ và lịch hẹn *(chỉnh lại theo hệ thống của bạn)* |
+| **Quản lý trạng thái** | Provider / Bloc / GetX | Quản lý state và luồng dữ liệu trong ứng dụng |
+| **Backend / Database** | Firebase / Node.js & MySQL | Lưu trữ dữ liệu người dùng, bác sĩ và lịch hẹn |
 | **Networking** | HTTP / Dio | Giao tiếp RESTful API |
 | **Local Storage** | Shared Preferences | Lưu trữ phiên đăng nhập và cài đặt cục bộ |
 
